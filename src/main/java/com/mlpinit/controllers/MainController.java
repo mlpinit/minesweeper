@@ -17,6 +17,7 @@ public class MainController {
     private BoardActionInterpreter boardActionInterpreter;
 
     private Observable<MouseButtonEvent>[][] cellButtonBoardRequestObservables;
+    private Observable<Boolean> restartGameObservable;
     private Board board;
 
     /* Private subjects */
@@ -29,18 +30,8 @@ public class MainController {
 
 
     public MainController() {
-        this.boardActionInterpreter = BoardActionInterpreter.create();
-        this.board = new Board(openCellsSubject, markCellsSubject);
-        this.boardFrame = new BoardFrame(openCellsObservable, markCellsObservable);
-        this.cellButtonBoardRequestObservables = boardFrame.getCellButtonBoardRequestObservables();
-        for (int i = 0; i < defaultHeight; i++) {
-            for (int j = 0; j < defaultWidth; j++) {
-                cellButtonBoardRequestObservables[i][j].subscribe(boardActionInterpreter::addEvent);
-            }
-        }
-        boardActionInterpreter.boardRequestObservable.subscribe(boardRequest -> {
-            board.execute(boardRequest);
-        });
+        createNewGame();
+        setupObservables();
     }
 
     public static void main(String[] args) {
@@ -51,4 +42,29 @@ public class MainController {
     public Board getBoard() {
         return board;
     }
+
+    private void setupObservables() {
+        for (int i = 0; i < defaultHeight; i++) {
+            for (int j = 0; j < defaultWidth; j++) {
+                cellButtonBoardRequestObservables[i][j].subscribe(boardActionInterpreter::addEvent);
+            }
+        }
+        boardActionInterpreter.boardRequestObservable.subscribe(board::execute);
+        restartGameObservable.subscribe(aVoid -> {
+            this.boardFrame.setVisible(false);
+            this.boardFrame.dispose();
+            this.boardFrame = null;
+            createNewGame();
+            setupObservables();
+        });
+    }
+
+    private void createNewGame() {
+        this.boardActionInterpreter = BoardActionInterpreter.create();
+        this.board = new Board(openCellsSubject, markCellsSubject);
+        this.boardFrame = new BoardFrame(openCellsObservable, markCellsObservable);
+        this.cellButtonBoardRequestObservables = boardFrame.getCellButtonBoardRequestObservables();
+        this.restartGameObservable = boardFrame.getRestartGameObservable();
+    }
+
 }

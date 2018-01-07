@@ -26,6 +26,7 @@ public class BoardFrame extends JFrame {
 
     private Observable<Cell> openCellsObservable;
     private Observable<Cell> markCellsObservable;
+    private Observable<Boolean> restartGameObservable;
     public Observable<MouseButtonEvent>[][] cellButtonBoardRequestObservables;
     public JButton[][] cellButtons;
 
@@ -33,7 +34,6 @@ public class BoardFrame extends JFrame {
         super("Minesweeper");
         this.setResizable(false);
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
-        this.setLocationRelativeTo(null);
 
         this.cellButtons = new JButton[MainController.defaultHeight][MainController.defaultWidth];
         this.openCellsObservable = openCellsObservable;
@@ -42,7 +42,12 @@ public class BoardFrame extends JFrame {
         setupObservables();
         addComponentsToPane(this.getContentPane());
         this.pack();
+        this.setLocationRelativeTo(null);
         this.setVisible(true);
+    }
+
+    public Observable<Boolean> getRestartGameObservable() {
+        return restartGameObservable;
     }
 
     public Observable<MouseButtonEvent>[][] getCellButtonBoardRequestObservables() {
@@ -55,6 +60,12 @@ public class BoardFrame extends JFrame {
     }
 
     private void addComponentsToPane(final Container pane) {
+        final JPanel menuPanel = new JPanel();
+        JButton restartButton = new JButton("Restart");
+        menuPanel.add(restartButton);
+        restartGameObservable = createRestartGameObservable(restartButton);
+        pane.add(menuPanel, BorderLayout.NORTH);
+
         final JPanel cellsPanel = new JPanel();
         cellsPanel.setLayout(new GridLayout(0,30));
         for (int obsIndex = 0, i = 0; i < MainController.defaultHeight; i++) {
@@ -70,7 +81,7 @@ public class BoardFrame extends JFrame {
                 cellsPanel.add(button);
             }
         }
-        pane.add(cellsPanel, BorderLayout.NORTH);
+        pane.add(cellsPanel, BorderLayout.CENTER);
     }
 
     private void openCell(Cell cell) {
@@ -117,6 +128,38 @@ public class BoardFrame extends JFrame {
                 @Override
                 public void mouseEntered(MouseEvent event) {
                     subscriber.onNext(new MouseButtonEvent(coordinate, event.getButton(), event.getID()));
+                }
+
+                @Override
+                public void mouseExited(MouseEvent event) {
+                }
+            };
+            component.addMouseListener(listener);
+
+            subscriber.add(Subscriptions.create(() -> component.removeMouseListener(listener)));
+        })
+        .subscribeOn(SwingScheduler.getInstance())
+        .unsubscribeOn(SwingScheduler.getInstance());
+    }
+
+    private Observable<Boolean> createRestartGameObservable(final Component component) {
+        return Observable.create((Observable.OnSubscribe<Boolean>) subscriber -> {
+            final MouseListener listener = new MouseListener() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    subscriber.onNext(true);
+                }
+
+                @Override
+                public void mousePressed(MouseEvent event) {
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent event) {
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent event) {
                 }
 
                 @Override
