@@ -132,12 +132,12 @@ public class BoardTest {
 
     @Test
     public void testThatItPublishesOpenedCells() {
-        MainController mainController = new MainController();
+        Board board = new Board(openCellSubject, markCellSubject);
         TestSubscriber<Cell> subscriber = new TestSubscriber<>();
-        mainController.openCellsObservable.subscribe(subscriber);
+        openCellSubject.subscribe(subscriber);
         Cell[][] cells = loadCellsFromTemplate();
-        mainController.getBoard().setBoard(cells);
-        mainController.getBoard().open(0, 3);
+        board.setBoard(cells);
+        board.open(0, 3);
         subscriber.assertValues(cells[0][3], cells[0][2], cells[0][4], cells[0][5], cells[0][6], cells[1][4], cells[1][5],
                 cells[1][6], cells[1][3], cells[1][2], cells[2][2], cells[2][3], cells[2][4]);
     }
