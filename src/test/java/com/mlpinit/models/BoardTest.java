@@ -84,7 +84,7 @@ public class BoardTest {
         board.open(mine.getX(), mine.getY());
         assertEquals(Board.State.GAME_OVER, board.getState());
         assertEquals(Cell.State.OPENED, mine.getState());
-        subscriber.assertNoValues();
+        subscriber.assertValueCount(100);
     }
 
     @Test
@@ -107,8 +107,8 @@ public class BoardTest {
             }
         }
 
-        openCellSubject.subscribe(subscriber);
         board.open(mine.getX(), mine.getY());
+        openCellSubject.subscribe(subscriber);
         board.open(notMine.getX(), notMine.getY());
         assertEquals(Board.State.GAME_OVER, board.getState());
         assertEquals(Cell.State.OPENED, mine.getState());
@@ -162,6 +162,43 @@ public class BoardTest {
         board.open(0, 0);
         board.toggleMark(0, 0);
         assertEquals(Cell.State.OPENED, board.getBoard()[0][0].getState());
+    }
+
+
+    @Test
+    public void testCanNotMarkOpenedCell() {
+        Board board = new Board(openCellSubject, markCellSubject);
+        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
+        board.open(0, 0);
+        Cell[][] cells = board.getBoard();
+        Cell cell = null;
+
+        outerboard:
+        for (int i = height - 1; i >= 0; i--) {
+            for (int j = width - 1; j >= 0; j--) {
+                cell = cells[i][j];
+                if (!cell.isMine()) {
+                    board.open(cell.getX(), cell.getY());
+                    break outerboard;
+                }
+            }
+        }
+        markCellSubject.subscribe(subscriber);
+        board.toggleMark(cell.getX(),cell.getY());
+        subscriber.assertNoValues();
+    }
+
+    @Test
+    public void testOpeningNeighboursWithBombsEndsTheGame() {
+        Board board = new Board(openCellSubject, markCellSubject);
+        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
+        Cell[][] cells = loadCellsFromTemplate();
+        board.setBoard(cells);
+        board.open(1,3);
+        board.toggleMark(3,2);
+        board.toggleMark(2,1);
+        board.openNeighbours(2,2);
+        assertTrue("Game should have ended", board.getState() == Board.State.GAME_OVER);
     }
 
     private Cell[][] loadCellsFromTemplate() {

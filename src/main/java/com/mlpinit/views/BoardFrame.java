@@ -86,9 +86,14 @@ public class BoardFrame extends JFrame {
 
     private void openCell(Cell cell) {
         Color color = new Color(220,220,220);
+        Color mineColor = new Color(139,0,0);
         JButton button = cellButtons[cell.getX()][cell.getY()];
-        button.setUI(getDefaultBasicButtonUI());
-        button.setBackground(color);
+        if (cell.isMine()) {
+            button.setBackground(mineColor);
+        } else {
+            button.setUI(getDefaultBasicButtonUI());
+            button.setBackground(color);
+        }
         button.setText("" + cell.getDisplayValue());
         button.setFont(button.getFont().deriveFont(Font.BOLD));
         button.setBorder(new LineBorder(color));

@@ -50,39 +50,35 @@ public class Board implements BoardInterface {
     }
 
     @Override
-    public int open(int x, int y) {
+    public void open(int x, int y) {
         if (state == State.NOT_STARTED) setupBoard(x, y);
-        Cell cell = cellAtPosition(x, y);
-        open(cell);
-        return cell.getValue();
+        open(cellAtPosition(x, y));
     }
 
-    @Override
-    public void open(Cell cell) {
+    private void open(Cell cell) {
+        if (cell.isOpened()) return;
         if (state == State.GAME_OVER) return;
+
         cell.open();
         Log.info(TAG, "--> Cell: " + cell);
         openCellPublishSubject.onNext(cell);
         if (cell.isMine()) {
             state = State.GAME_OVER;
+            openMines();
             Log.info(TAG, "GAME OVER");
         } else {
             Log.info(TAG, "Opening Cell at: " + cell.getCoordinate() + ".");
             if (cell.isEmpty()) {
                 List<Cell> neighbours = neighbours(cell.getX(), cell.getY());
-                for (Cell neighbour : neighbours) {
-                    if (!neighbour.isOpened()) open(neighbour);
-                }
+                for (Cell neighbour : neighbours) open(neighbour);
             }
         }
     }
 
     @Override
-    public boolean openNeighbours(int x, int y) {
+    public void openNeighbours(int x, int y) {
         Cell currentCell = cellAtPosition(x, y);
-        if (!currentCell.isOpened()) {
-            return false;
-        }
+        if (!currentCell.isOpened()) return;
         List<Cell> neighbours = neighbours(x, y);
         List<Cell> markedNeighbours = new ArrayList<>();
         List<Cell> nonMarkedNeighbours = new ArrayList<>();
@@ -96,24 +92,15 @@ public class Board implements BoardInterface {
         }
         // only open neighbours if the correct number of mines has been marked around the current cell
         if (markedNeighbours.size() == currentCell.getValue()) {
-            for (Cell neighbour : markedNeighbours) {
-                if (!neighbour.isMine()) {
-                    state = State.GAME_OVER;
-                    neighbour.open();
-                    return true;
-                }
-            }
-            for (Cell neighbour : nonMarkedNeighbours) {
-                open(neighbour.getX(), neighbour.getY());
-            }
-            return true;
+            for (Cell neighbour : nonMarkedNeighbours) open(neighbour);
         }
-        return false;
     }
     @Override
     public void toggleMark(int x, int y) {
         Cell cell = board[x][y];
         if (cell == null) return;
+        if (cell.isOpened()) return;
+
         if (cell.isMarked()) {
             Log.info(TAG, "Removing mark for cell at: " + cell.getCoordinate() + ".");
             cell.unsetMark();
@@ -189,9 +176,7 @@ public class Board implements BoardInterface {
 
     private int neighboursCount(int x, int y) {
         int counter = 0;
-        for (Cell cell : neighbours(x, y)) {
-            if (cell.isMine()) counter++;
-        }
+        for (Cell cell : neighbours(x, y)) if (cell.isMine()) counter++;
         return counter;
     }
 
@@ -201,6 +186,18 @@ public class Board implements BoardInterface {
         if (x >= height) return null;
         if (y >= width) return null;
         return board[x][y];
+    }
+
+    private void openMines() {
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                Cell cell = board[i][j];
+                if (cell.isMine() && !cell.isOpened()) {
+                    cell.open();
+                    openCellPublishSubject.onNext(cell);
+                }
+            }
+        }
     }
 
     // Used only for testing.
