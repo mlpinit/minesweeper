@@ -1,17 +1,32 @@
 package com.mlpinit.models;
 
-class Cell {
+import org.omg.CORBA.CODESET_INCOMPATIBLE;
+
+import java.awt.*;
+
+public class Cell {
+    public static Color[] colors = {
+            Color.white, // not used
+            new Color(11,36,251),   // 1
+            new Color(14,122,17  ), // 2
+            new Color(252,13,27  ), // 3
+            new Color(2,11,121)  ,  // 4
+            new Color(0,255,255  ), // 5
+            new Color(169,169,169), // 6
+            new Color(255,140,0),   // 7
+            new Color(0,0,0)        // 8
+    };
+
     public static final int MINE = -1;
     public static final int EMPTY = 0;
 
     private State state;
     private int value;
-    private int x;
-    private int y;
+    private Coordinate coordinate;
+    private Color color;
 
-    public Cell(int value, int x, int y) {
-        this.x = x;
-        this.y = y;
+    public Cell(Coordinate coordinate, int value) {
+        this.coordinate = coordinate;
         this.value = value;
         this.state = State.CLOSED;
     }
@@ -24,12 +39,16 @@ class Cell {
         return value;
     }
 
+    public String getDisplayValue() {
+        return value == MINE ? "*" : "" + value;
+    }
+
     public int getX() {
-        return x;
+        return coordinate.getX();
     }
 
     public int getY() {
-        return y;
+        return coordinate.getY();
     }
 
     public State getState() {
@@ -52,6 +71,10 @@ class Cell {
         return false;
     }
 
+    public Coordinate getCoordinate() {
+        return coordinate;
+    }
+
     public boolean isMarked() {
         return state == State.MARKED;
     }
@@ -68,8 +91,12 @@ class Cell {
         return value == MINE;
     }
 
+    public Color getForegroundColor() {
+        return value == MINE ? Color.white : colors[value];
+    }
+
     public String toString() {
-        return "" + value + " ";
+        return state + " with value: " + value + " ";
     }
 
     public enum State {

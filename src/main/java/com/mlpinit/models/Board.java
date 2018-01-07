@@ -1,10 +1,14 @@
 package com.mlpinit.models;
 
+import com.mlpinit.utils.Log;
+import rx.subjects.PublishSubject;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class Board implements BoardInterface {
+    private static final String TAG = "[Board]";
     public State state = State.NOT_STARTED;
 
     private int height;
@@ -12,10 +16,37 @@ public class Board implements BoardInterface {
     private int nrOfMines;
     private Cell[][] board = null;
 
-    public Board(int height, int width, int nrOfMines) {
+    private PublishSubject<Cell> openCellPublishSubject;
+    private PublishSubject<Cell> markCellPublishSubject;
+
+    public Board(PublishSubject<Cell> openCellPublishSubject, PublishSubject<Cell> markCellPublishSubject,
+                 int height, int width, int nrOfMines) {
         this.height = height;
         this.width = width;
         this.nrOfMines = nrOfMines;
+        this.openCellPublishSubject = openCellPublishSubject;
+        this.markCellPublishSubject = markCellPublishSubject;
+    }
+
+    public Board(PublishSubject<Cell> openCellPublishSubject, PublishSubject<Cell> markCellPublishSubject) {
+        // default settings
+        this.height = 16;
+        this.width = 30;
+        this.nrOfMines = 100;
+
+        this.openCellPublishSubject = openCellPublishSubject;
+        this.markCellPublishSubject = markCellPublishSubject;
+    }
+
+    public void execute(BoardRequest boardRequest) {
+        if (boardRequest.getActionType() == BoardAction.OPEN) {
+            open(boardRequest.getX(), boardRequest.getY());
+        } else if (boardRequest.getActionType() == BoardAction.MARK) {
+            toggleMark(boardRequest.getX(), boardRequest.getY());
+        } else if (boardRequest.getActionType() == BoardAction.OPEN_NEIGHBOURS) {
+            Log.info(TAG, "Opening Neighbours from: " + boardRequest.getCoordinate() + ".");
+            openNeighbours(boardRequest.getX(), boardRequest.getY());
+        }
     }
 
     @Override
@@ -28,13 +59,20 @@ public class Board implements BoardInterface {
 
     @Override
     public void open(Cell cell) {
+        if (state == State.GAME_OVER) return;
         cell.open();
+        Log.info(TAG, "--> Cell: " + cell);
+        openCellPublishSubject.onNext(cell);
         if (cell.isMine()) {
             state = State.GAME_OVER;
-        } else if (cell.isEmpty()) {
-            List<Cell> neighbours = neighbours(cell.getX(), cell.getY());
-            for (Cell neighbour : neighbours) {
-                if (!neighbour.isOpened()) open(neighbour);
+            Log.info(TAG, "GAME OVER");
+        } else {
+            Log.info(TAG, "Opening Cell at: " + cell.getCoordinate() + ".");
+            if (cell.isEmpty()) {
+                List<Cell> neighbours = neighbours(cell.getX(), cell.getY());
+                for (Cell neighbour : neighbours) {
+                    if (!neighbour.isOpened()) open(neighbour);
+                }
             }
         }
     }
@@ -73,8 +111,17 @@ public class Board implements BoardInterface {
         return false;
     }
     @Override
-    public boolean setMark(int x, int y) {
-        return board[x][y].setMark();
+    public void toggleMark(int x, int y) {
+        Cell cell = board[x][y];
+        if (cell == null) return;
+        if (cell.isMarked()) {
+            Log.info(TAG, "Removing mark for cell at: " + cell.getCoordinate() + ".");
+            cell.unsetMark();
+        } else {
+            Log.info(TAG, "Setting mark for cell at: " + cell.getCoordinate() + ".");
+            cell.setMark();
+        }
+        markCellPublishSubject.onNext(cell);
     }
 
     @Override
@@ -107,13 +154,15 @@ public class Board implements BoardInterface {
             int position = positions.get(i);
             int row =  position / width;
             int column = position % width;
-            board[row][column] = new Cell(Cell.MINE, row, column);
+            Coordinate coordinate = new Coordinate(row, column);
+            board[row][column] = new Cell(coordinate, Cell.MINE);
         }
         // set value to the count of neighbouring mines
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 if (board[i][j] == null) {
-                    board[i][j] = new Cell(neighboursCount(i, j), i, j);
+                    Coordinate coordinate = new Coordinate(i, j);
+                    board[i][j] = new Cell(coordinate, neighboursCount(i, j));
                 }
             }
         }
