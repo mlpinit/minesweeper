@@ -29,7 +29,7 @@ public class BoardFrame extends JFrame {
     private Observable<Cell> incorrectMarkCellsObservable;
     private Observable<Cell> openMineCellObservable;
     private Observable<MouseEvent> restartGameObservable;
-    public Observable<MouseButtonEvent> cellButtonBoardRequestObservable = null;
+    public Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
     public JButton[][] cellButtons;
 
     public BoardFrame(Observable<Cell> openCellsObservable, Observable<Cell> markCellsObservable,
@@ -76,7 +76,7 @@ public class BoardFrame extends JFrame {
 
         final JPanel cellsPanel = new JPanel();
         cellsPanel.setLayout(new GridLayout(0,30));
-        for (int obsIndex = 0, i = 0; i < MainController.defaultHeight; i++) {
+        for (int i = 0; i < MainController.defaultHeight; i++) {
             for (int j = 0; j < MainController.defaultWidth; j++) {
                 final Coordinate coordinate = new Coordinate(i, j);
                 JButton button = new JButton();
@@ -89,8 +89,7 @@ public class BoardFrame extends JFrame {
                         .map(event -> new MouseButtonEvent(coordinate, event.getButton(), event.getID()));
                 cellButtonBoardRequestObservable = cellButtonBoardRequestObservable.mergeWith(observable);
                 cellsPanel.add(button);
-            }
-        }
+            } }
         pane.add(cellsPanel, BorderLayout.CENTER);
     }
 
