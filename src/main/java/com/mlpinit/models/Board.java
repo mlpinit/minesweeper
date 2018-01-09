@@ -1,6 +1,7 @@
 package com.mlpinit.models;
 
 import com.mlpinit.utils.Log;
+import rx.Observable;
 import rx.subjects.PublishSubject;
 
 import java.util.ArrayList;
@@ -20,6 +21,9 @@ public class Board implements BoardInterface {
     private PublishSubject<Cell> markCellSubject;
     private PublishSubject<Cell> incorrectMarkCellSubject;
     private PublishSubject<Cell> openMineSubject;
+    private PublishSubject<Boolean> gameIsRunningSubject = PublishSubject.create();
+
+    public Observable<Boolean> gameIsRunningObservable = gameIsRunningSubject.share();
 
     public Board(PublishSubject<Cell> openCellSubject,
                  PublishSubject<Cell> markCellSubject,
@@ -67,6 +71,7 @@ public class Board implements BoardInterface {
     public void open(int x, int y) {
         if (state == State.NOT_STARTED) {
             setupBoard(x, y);
+            gameIsRunningSubject.onNext(true);
             Log.debug(TAG, toString());
         }
         open(cellAtPosition(x, y));
@@ -80,6 +85,7 @@ public class Board implements BoardInterface {
         if (cell.isMine()) {
             openMineSubject.onNext(cell);
             state = State.GAME_OVER;
+            gameIsRunningSubject.onNext(false);
             setEndGameCellState();
             Log.debug(TAG, "GAME OVER");
         } else {

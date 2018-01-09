@@ -1,9 +1,6 @@
 package com.mlpinit.controllers;
 
-import com.mlpinit.models.BoardActionInterpreter;
-import com.mlpinit.models.Board;
-import com.mlpinit.models.MouseButtonEvent;
-import com.mlpinit.models.Cell;
+import com.mlpinit.models.*;
 import com.mlpinit.views.BoardFrame;
 import rx.Observable;
 import rx.subjects.PublishSubject;
@@ -25,6 +22,7 @@ public class MainController {
 
     private BoardFrame boardFrame;
     private BoardActionInterpreter boardActionInterpreter;
+    private MinesweeperTimer minesweeperTimer;
 
     private Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
     private Observable<MouseEvent> restartGameObservable;
@@ -54,14 +52,22 @@ public class MainController {
 
     private void createNewGame() {
         this.boardActionInterpreter = BoardActionInterpreter.create();
+        this.minesweeperTimer = new MinesweeperTimer();
         this.board = new Board(openCellsSubject, markCellsSubject, incorrectMarkCellsSubject, openMineCelSubject);
-        this.boardFrame = new BoardFrame(
-                openCellsObservable, markCellsObservable, incorrectMarkCellsObservable, openMineCellObservable);
+        this.boardFrame = new BoardFrame(openCellsObservable, markCellsObservable, incorrectMarkCellsObservable,
+                openMineCellObservable, minesweeperTimer.elapsedTimeObservable);
         this.cellButtonBoardRequestObservable = boardFrame.getCellButtonBoardRequestObservable();
         this.restartGameObservable = boardFrame.getRestartGameObservable();
     }
 
     private void setupObservables() {
+        this.board.gameIsRunningObservable.subscribe(gameIsRunning -> {
+            if (gameIsRunning) {
+                minesweeperTimer.startTimer();
+            } else {
+                minesweeperTimer.stopTimer();
+            }
+        });
         cellButtonBoardRequestObservable
                 .filter(mouseButtonEvent -> observedMouseEvents.contains(mouseButtonEvent.getButtonID()))
                 .subscribe(boardActionInterpreter::addEvent);
