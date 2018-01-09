@@ -9,6 +9,7 @@ import com.mlpinit.utils.Log;
 import rx.Observable;
 import rx.observables.SwingObservable;
 
+import javax.sound.sampled.Line;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.plaf.ButtonUI;
@@ -19,10 +20,14 @@ import java.awt.event.MouseEvent;
 public class BoardFrame extends JFrame {
     private static final String TAG = "[BoardFrame]";
     private static final String[] markSymbols = { "", "!" };
-    private static final Color regularNotOpenedButtonColor = new Color(105,105,105);
-    private static final Color[] markColors = { regularNotOpenedButtonColor, new Color(210,105,30) };
+    private static final Color baseColor = new Color(105,105,105);
+    private static final Color[] markColors = { baseColor, new Color(210,105,30) };
     private static final Color openCellColor = new Color(220,220,220);
     private static final Color mineColor = new Color(139,0,0);
+
+    private JTextField nrOfMinesTextField;
+    private JTextField timerTextField;
+    private int nrOfMines;
 
     private Observable<Cell> openCellsObservable;
     private Observable<Cell> markCellsObservable;
@@ -46,6 +51,7 @@ public class BoardFrame extends JFrame {
         this.incorrectMarkCellsObservable = incorrectMarkCellsObservable;
         this.openMineCellObservable = openMineCellObservable;
         setupObservables();
+        this.nrOfMines = MainController.defaultNrOfMines;
         addComponentsToPane(this.getContentPane());
         this.pack();
         this.setLocationRelativeTo(null);
@@ -69,8 +75,24 @@ public class BoardFrame extends JFrame {
 
     private void addComponentsToPane(final Container pane) {
         final JPanel menuPanel = new JPanel();
+        menuPanel.setLayout(new BorderLayout());
         JButton restartButton = new JButton("Restart");
-        menuPanel.add(restartButton);
+        restartButton.setBorder(new LineBorder(baseColor, 3));
+        restartButton.setPreferredSize(new Dimension(200, 50));
+        menuPanel.add(restartButton, BorderLayout.CENTER);
+        nrOfMinesTextField = new JTextField(" " + nrOfMines + " ");
+        nrOfMinesTextField.setBorder(new LineBorder(baseColor, 3));
+        nrOfMinesTextField.setEditable(false);
+        nrOfMinesTextField.setPreferredSize(new Dimension(40, 50));
+        nrOfMinesTextField.setHorizontalAlignment(SwingConstants.RIGHT);
+        menuPanel.add(nrOfMinesTextField, BorderLayout.WEST);
+        timerTextField = new JTextField(" 000 ");
+        timerTextField.setEditable(false);
+        timerTextField.setBorder(new LineBorder(baseColor, 3));
+        timerTextField.setPreferredSize(new Dimension(40, 50));
+        timerTextField.setHorizontalAlignment(SwingConstants.RIGHT);
+
+        menuPanel.add(timerTextField, BorderLayout.EAST);
         restartGameObservable = SwingObservable.fromMouseEvents(restartButton);
         pane.add(menuPanel, BorderLayout.NORTH);
 
@@ -81,7 +103,7 @@ public class BoardFrame extends JFrame {
                 final Coordinate coordinate = new Coordinate(i, j);
                 JButton button = new JButton();
                 button.setUI((ButtonUI) BasicButtonUI.createUI(button));
-                button.setBackground(regularNotOpenedButtonColor);
+                button.setBackground(baseColor);
                 button.setPreferredSize(new Dimension(25 ,25));
                 button.setBorder(BorderFactory.createEtchedBorder());
                 cellButtons[i][j] = button;
@@ -114,6 +136,8 @@ public class BoardFrame extends JFrame {
 
     private void markCell(Cell cell) {
         int markType = cell.isMarked() ? 1 : 0;
+        nrOfMines += cell.isMarked() ? -1 : 1;
+        nrOfMinesTextField.setText(" " + String.format("%3d", nrOfMines) + " ");
         JButton button = cellButtons[cell.getX()][cell.getY()];
         button.setBackground(markColors[markType]);
         button.setText(markSymbols[markType]);
