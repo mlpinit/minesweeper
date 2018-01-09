@@ -191,7 +191,6 @@ public class BoardTest {
 
     @Test
     public void testOpeningNeighboursWithBombsEndsTheGame() {
-        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
         Cell[][] cells = loadCellsFromTemplate();
         board.setBoard(cells);
         board.open(1,3);
@@ -207,7 +206,6 @@ public class BoardTest {
 
     @Test
     public void testAllOpenedNeighboursAreMarkedOpen() {
-        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
         Cell[][] cells = loadCellsFromTemplate();
         board.setBoard(cells);
         board.open(1,1);
@@ -227,6 +225,18 @@ public class BoardTest {
     public void testTogglingMarkOnCellBeforeGameStartedShouldNotBreakTheGame() {
         TestSubscriber<Cell> subscriber = new TestSubscriber<>();
         // to be implemented
+    }
+
+    @Test
+    public void testShouldNotBeAllowedToToggleMarkIfGameIsOver() {
+        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
+        Cell[][] cells = loadCellsFromTemplate();
+        board.setBoard(cells);
+        board.open(1,1);
+        board.open(0,0);
+        markCellSubject.subscribe(subscriber);
+        board.toggleMark(15,29);
+        subscriber.assertNoValues();
     }
 
     private Cell[][] loadCellsFromTemplate() {

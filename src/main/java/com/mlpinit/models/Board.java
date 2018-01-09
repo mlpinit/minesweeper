@@ -11,7 +11,6 @@ public class Board implements BoardInterface {
     private static final String TAG = "[Board]";
     public State state = State.NOT_STARTED;
 
-    private int currentCellsOpen = 0;
     private int height;
     private int width;
     private int nrOfMines;
@@ -66,7 +65,10 @@ public class Board implements BoardInterface {
 
     @Override
     public void open(int x, int y) {
-        if (state == State.NOT_STARTED) setupBoard(x, y);
+        if (state == State.NOT_STARTED) {
+            setupBoard(x, y);
+            Log.debug(TAG, toString());
+        }
         open(cellAtPosition(x, y));
     }
 
@@ -81,10 +83,7 @@ public class Board implements BoardInterface {
             setEndGameCellState();
             Log.debug(TAG, "GAME OVER");
         } else {
-            currentCellsOpen++;
             openCellSubject.onNext(cell);
-            Log.debug(TAG, "There should be " + currentCellsOpen + " cells open at this time.");
-            Log.debug(TAG, "There are " + countCellsWithOpenState() + " cells open at this time.");
 
             Log.debug(TAG, "Opening cell with state " + cell.getState() + " at: " + cell.getCoordinate() + ".");
             if (cell.isEmpty()) {
@@ -118,19 +117,12 @@ public class Board implements BoardInterface {
     }
     @Override
     public void toggleMark(int x, int y) {
+        if (state == State.GAME_OVER) return;
         Cell cell = board[x][y];
         if (cell == null) return;
         if (cell.isOpened()) return;
-
-        Log.debug(TAG, "From Mark: There are " + countCellsWithOpenState() + " cells open at this time.");
-        if (cell.isMarked()) {
-            Log.debug(TAG, "Removing mark for cell at: " + cell.getCoordinate() + ".");
-            cell.unsetMark();
-        } else {
-            Log.debug(TAG, "Current cell state is: " + cell.getState());
-            Log.debug(TAG, "Setting mark for cell at: " + cell.getCoordinate() + ".");
-            cell.setMark();
-        }
+        if (cell.isMarked()) cell.unsetMark();
+        else cell.setMark();
         markCellSubject.onNext(cell);
     }
 
@@ -142,6 +134,19 @@ public class Board implements BoardInterface {
     @Override
     public State getState() {
         return state;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder representation = new StringBuilder(height * width + height + 1);
+        representation.append("\n");
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                representation.append(String.format("%3d", board[i][j].getValue()));
+            }
+            representation.append(("\n"));
+        }
+        return representation.toString();
     }
 
     private void setupBoard(int x, int y) {
@@ -226,12 +231,7 @@ public class Board implements BoardInterface {
         }
     }
 
-    // Used only for testing.
-    public void setBoard(Cell[][] board) {
-        state = State.STARTED;
-        this.board = board;
-    }
-
+    // TODO: remove (used for debugging)
     private int countCellsWithOpenState() {
         int counter = 0;
         for (int i = 0; i < height; i++) {
@@ -242,5 +242,11 @@ public class Board implements BoardInterface {
             }
         }
         return counter;
+    }
+
+    // Used only for testing.
+    public void setBoard(Cell[][] board) {
+        state = State.STARTED;
+        this.board = board;
     }
 }
