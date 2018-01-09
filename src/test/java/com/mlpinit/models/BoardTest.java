@@ -1,6 +1,7 @@
 package com.mlpinit.models;
 
 import com.mlpinit.controllers.MainController;
+import org.junit.Before;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
 import rx.subjects.PublishSubject;
@@ -21,10 +22,18 @@ public class BoardTest {
     private int column = 2;
     private PublishSubject<Cell> openCellSubject = PublishSubject.create();
     private PublishSubject<Cell> markCellSubject = PublishSubject.create();
+    private PublishSubject<Cell> incorrectMarkCellSubject = PublishSubject.create();
+    private PublishSubject<Cell> openMineCellSubject = PublishSubject.create();
+    private Board board;
+
+
+    @Before
+    public void setup() {
+        this.board = new Board(openCellSubject, markCellSubject, incorrectMarkCellSubject, openMineCellSubject);
+    }
 
     @Test
     public void testThatItSetsUpAnInitialBoardOnFirstOpenClick() {
-        Board board = new Board(openCellSubject, markCellSubject);
         board.open(row,column);
         Cell[][] bd = board.getBoard();
         for (int i = 0; i < height; i++) {
@@ -37,7 +46,6 @@ public class BoardTest {
 
     @Test
     public void testThatItSetsCorrectNumberOfMines() {
-        Board board = new Board(openCellSubject, markCellSubject);
         int counter = 0;
         board.open(row, column);
         Cell[][] bd = board.getBoard();
@@ -55,7 +63,7 @@ public class BoardTest {
     public void testThatFirstClickIsNotAMine() {
         int cellIsAMineCounter = 0;
         for (int i = 0; i < 100; i++) {
-            Board board = new Board(openCellSubject, markCellSubject);
+            Board board = new Board(openCellSubject, markCellSubject, incorrectMarkCellSubject, openMineCellSubject);
             board.open(row, column);
             if (board.getBoard()[row][column].getValue() == Cell.MINE) {
                 cellIsAMineCounter++;
@@ -67,7 +75,6 @@ public class BoardTest {
     @Test
     public void testOpeningMineEndsTheGame() {
         TestSubscriber<Cell> subscriber = TestSubscriber.create();
-        Board board = new Board(openCellSubject, markCellSubject);
         board.open(1,2);
         Cell[][] bd = board.getBoard();
         Cell mine = null;
@@ -80,7 +87,7 @@ public class BoardTest {
                 }
             }
         }
-        openCellSubject.subscribe(subscriber);
+        openMineCellSubject.subscribe(subscriber);
         board.open(mine.getX(), mine.getY());
         assertEquals(Board.State.GAME_OVER, board.getState());
         assertEquals(Cell.State.OPENED, mine.getState());
@@ -90,7 +97,6 @@ public class BoardTest {
     @Test
     public void testCanNotOpenAnotherCellAfterGameOver() {
         TestSubscriber<Cell> subscriber = TestSubscriber.create();
-        Board board = new Board(openCellSubject, markCellSubject);
         board.open(1,2);
         Cell[][] bd = board.getBoard();
         Cell mine = null;
@@ -118,7 +124,6 @@ public class BoardTest {
     @Test
     public void testOpeningEmptyCellOpensAllNeighbours() {
         Cell[][] cells = loadCellsFromTemplate();
-        Board board = new Board(openCellSubject, markCellSubject);
         board.setBoard(cells);
         board.open(11, 21);
         int openedCellsCounter = 0;
@@ -132,7 +137,6 @@ public class BoardTest {
 
     @Test
     public void testThatItPublishesOpenedCells() {
-        Board board = new Board(openCellSubject, markCellSubject);
         TestSubscriber<Cell> subscriber = new TestSubscriber<>();
         openCellSubject.subscribe(subscriber);
         Cell[][] cells = loadCellsFromTemplate();
@@ -144,7 +148,6 @@ public class BoardTest {
 
     @Test
     public void testToggleMarkTogglesCell() {
-        Board board = new Board(openCellSubject, markCellSubject);
         TestSubscriber<Cell> subscriber = new TestSubscriber<>();
         board.open(0, 0);
         markCellSubject.subscribe(subscriber);
@@ -158,7 +161,6 @@ public class BoardTest {
 
     @Test
     public void testToggleMarkDoesNotToggleOpenCell() {
-        Board board = new Board(openCellSubject, markCellSubject);
         board.open(0, 0);
         board.toggleMark(0, 0);
         assertEquals(Cell.State.OPENED, board.getBoard()[0][0].getState());
@@ -167,7 +169,6 @@ public class BoardTest {
 
     @Test
     public void testCanNotMarkOpenedCell() {
-        Board board = new Board(openCellSubject, markCellSubject);
         TestSubscriber<Cell> subscriber = new TestSubscriber<>();
         board.open(0, 0);
         Cell[][] cells = board.getBoard();
@@ -184,13 +185,12 @@ public class BoardTest {
             }
         }
         markCellSubject.subscribe(subscriber);
-        board.toggleMark(cell.getX(),cell.getY());
+        board.toggleMark(cell.getX(), cell.getY());
         subscriber.assertNoValues();
     }
 
     @Test
     public void testOpeningNeighboursWithBombsEndsTheGame() {
-        Board board = new Board(openCellSubject, markCellSubject);
         TestSubscriber<Cell> subscriber = new TestSubscriber<>();
         Cell[][] cells = loadCellsFromTemplate();
         board.setBoard(cells);
@@ -199,6 +199,34 @@ public class BoardTest {
         board.toggleMark(2,1);
         board.openNeighbours(2,2);
         assertTrue("Game should have ended", board.getState() == Board.State.GAME_OVER);
+    }
+
+    @Test
+    public void testIfCellIsAlreadyOpenItShouldNotReopen() {
+    }
+
+    @Test
+    public void testAllOpenedNeighboursAreMarkedOpen() {
+        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
+        Cell[][] cells = loadCellsFromTemplate();
+        board.setBoard(cells);
+        board.open(1,1);
+        board.toggleMark(0,0);
+        board.toggleMark(0,1);
+        board.openNeighbours(1,1);
+        assertTrue(cells[0][2].isOpened());
+        assertTrue(cells[1][0].isOpened());
+        assertTrue(cells[1][1].isOpened());
+        assertTrue(cells[1][2].isOpened());
+        assertTrue(cells[2][0].isOpened());
+        assertTrue(cells[2][1].isOpened());
+        assertTrue(cells[2][2].isOpened());
+    }
+
+    @Test
+    public void testTogglingMarkOnCellBeforeGameStartedShouldNotBreakTheGame() {
+        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
+        // to be implemented
     }
 
     private Cell[][] loadCellsFromTemplate() {

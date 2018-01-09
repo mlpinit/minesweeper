@@ -8,7 +8,17 @@ import com.mlpinit.views.BoardFrame;
 import rx.Observable;
 import rx.subjects.PublishSubject;
 
+import java.awt.event.MouseEvent;
+import java.util.HashSet;
+
 public class MainController {
+    public static final HashSet<Integer> observedMouseEvents;
+    static {
+        observedMouseEvents = new HashSet<>();
+        observedMouseEvents.add(MouseEvent.MOUSE_PRESSED);
+        observedMouseEvents.add(MouseEvent.MOUSE_RELEASED);
+        observedMouseEvents.add(MouseEvent.MOUSE_ENTERED);
+    }
     public static final int defaultHeight = 16;
     public static final int defaultWidth = 30;
     public static final int defaultNrOfMines = 100;
@@ -17,16 +27,20 @@ public class MainController {
     private BoardActionInterpreter boardActionInterpreter;
 
     private Observable<MouseButtonEvent>[][] cellButtonBoardRequestObservables;
-    private Observable<Boolean> restartGameObservable;
+    private Observable<MouseEvent> restartGameObservable;
     private Board board;
 
     /* Private subjects */
     private PublishSubject<Cell> openCellsSubject = PublishSubject.create();
     private PublishSubject<Cell> markCellsSubject = PublishSubject.create();
+    private PublishSubject<Cell> incorrectMarkCellsSubject = PublishSubject.create();
+    private PublishSubject<Cell> openMineCelSubject = PublishSubject.create();
 
     /* Public observables */
     public Observable<Cell> openCellsObservable = openCellsSubject.share();
     public Observable<Cell> markCellsObservable = markCellsSubject.share();
+    public Observable<Cell> incorrectMarkCellsObservable = incorrectMarkCellsSubject.share();
+    public Observable<Cell> openMineCellObservable = openMineCelSubject.share();
 
 
     public MainController() {
@@ -38,33 +52,37 @@ public class MainController {
         new MainController();
     }
 
-    // used for testing
-    public Board getBoard() {
-        return board;
-    }
-
     private void setupObservables() {
         for (int i = 0; i < defaultHeight; i++) {
             for (int j = 0; j < defaultWidth; j++) {
-                cellButtonBoardRequestObservables[i][j].subscribe(boardActionInterpreter::addEvent);
+                cellButtonBoardRequestObservables[i][j]
+                        .filter(mouseButtonEvent -> observedMouseEvents.contains(mouseButtonEvent.getButtonID()))
+                        .subscribe(boardActionInterpreter::addEvent);
             }
         }
         boardActionInterpreter.boardRequestObservable.subscribe(board::execute);
-        restartGameObservable.subscribe(aVoid -> {
-            this.boardFrame.setVisible(false);
-            this.boardFrame.dispose();
-            this.boardFrame = null;
-            createNewGame();
-            setupObservables();
-        });
+        restartGameObservable.map(event -> event.getID() == MouseEvent.MOUSE_CLICKED)
+                .filter(value -> value == true)
+                .subscribe(event -> {
+                    this.boardFrame.setVisible(false);
+                    this.boardFrame.dispose();
+                    this.boardFrame = null;
+                    createNewGame();
+                    setupObservables();
+                });
     }
 
     private void createNewGame() {
         this.boardActionInterpreter = BoardActionInterpreter.create();
-        this.board = new Board(openCellsSubject, markCellsSubject);
-        this.boardFrame = new BoardFrame(openCellsObservable, markCellsObservable);
+        this.board = new Board(openCellsSubject, markCellsSubject, incorrectMarkCellsSubject, openMineCelSubject);
+        this.boardFrame = new BoardFrame(
+                openCellsObservable, markCellsObservable, incorrectMarkCellsObservable, openMineCellObservable);
         this.cellButtonBoardRequestObservables = boardFrame.getCellButtonBoardRequestObservables();
         this.restartGameObservable = boardFrame.getRestartGameObservable();
     }
 
+    // Use for testing only.
+    public Board getBoard() {
+        return board;
+    }
 }

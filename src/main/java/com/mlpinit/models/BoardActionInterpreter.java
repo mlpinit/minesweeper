@@ -48,7 +48,7 @@ public class BoardActionInterpreter {
                 } else if (isOpenCell()) {
                     actionType = BoardAction.OPEN;
                 }
-                Log.info(TAG, "Sending request to " + actionType + ". Cell: " + actionableCoordinate);
+                Log.debug(TAG, "Sending request to " + actionType + ". Cell: " + actionableCoordinate);
                 observedByBoard.onNext(new BoardRequest(actionableCoordinate, actionType));
                 penUltimatePress = null;
                 ultimatePress = null;

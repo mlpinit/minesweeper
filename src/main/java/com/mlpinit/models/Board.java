@@ -11,31 +11,46 @@ public class Board implements BoardInterface {
     private static final String TAG = "[Board]";
     public State state = State.NOT_STARTED;
 
+    private int currentCellsOpen = 0;
     private int height;
     private int width;
     private int nrOfMines;
     private Cell[][] board = null;
 
-    private PublishSubject<Cell> openCellPublishSubject;
-    private PublishSubject<Cell> markCellPublishSubject;
+    private PublishSubject<Cell> openCellSubject;
+    private PublishSubject<Cell> markCellSubject;
+    private PublishSubject<Cell> incorrectMarkCellSubject;
+    private PublishSubject<Cell> openMineSubject;
 
-    public Board(PublishSubject<Cell> openCellPublishSubject, PublishSubject<Cell> markCellPublishSubject,
-                 int height, int width, int nrOfMines) {
+    public Board(PublishSubject<Cell> openCellSubject,
+                 PublishSubject<Cell> markCellSubject,
+                 PublishSubject<Cell> incorrectMarkCellSubject,
+                 PublishSubject<Cell> openMineSubject,
+                 int height, int width, int nrOfMines)
+    {
         this.height = height;
         this.width = width;
         this.nrOfMines = nrOfMines;
-        this.openCellPublishSubject = openCellPublishSubject;
-        this.markCellPublishSubject = markCellPublishSubject;
+        this.openCellSubject = openCellSubject;
+        this.markCellSubject = markCellSubject;
+        this.incorrectMarkCellSubject = incorrectMarkCellSubject;
+        this.openMineSubject = openMineSubject;
     }
 
-    public Board(PublishSubject<Cell> openCellPublishSubject, PublishSubject<Cell> markCellPublishSubject) {
+    public Board(PublishSubject<Cell> openCellSubject,
+                 PublishSubject<Cell> markCellSubject,
+                 PublishSubject<Cell> incorrectMarkCellSubject,
+                 PublishSubject<Cell> openMineSubject)
+    {
         // default settings
         this.height = 16;
         this.width = 30;
         this.nrOfMines = 100;
 
-        this.openCellPublishSubject = openCellPublishSubject;
-        this.markCellPublishSubject = markCellPublishSubject;
+        this.openCellSubject = openCellSubject;
+        this.markCellSubject = markCellSubject;
+        this.incorrectMarkCellSubject = incorrectMarkCellSubject;
+        this.openMineSubject = openMineSubject;
     }
 
     public void execute(BoardRequest boardRequest) {
@@ -44,7 +59,7 @@ public class Board implements BoardInterface {
         } else if (boardRequest.getActionType() == BoardAction.MARK) {
             toggleMark(boardRequest.getX(), boardRequest.getY());
         } else if (boardRequest.getActionType() == BoardAction.OPEN_NEIGHBOURS) {
-            Log.info(TAG, "Opening Neighbours from: " + boardRequest.getCoordinate() + ".");
+            Log.debug(TAG, "Opening Neighbours from: " + boardRequest.getCoordinate() + ".");
             openNeighbours(boardRequest.getX(), boardRequest.getY());
         }
     }
@@ -56,18 +71,22 @@ public class Board implements BoardInterface {
     }
 
     private void open(Cell cell) {
-        if (cell.isOpened()) return;
+        if (!cell.isClosed()) return;
         if (state == State.GAME_OVER) return;
 
         cell.open();
-        Log.info(TAG, "--> Cell: " + cell);
-        openCellPublishSubject.onNext(cell);
         if (cell.isMine()) {
+            openMineSubject.onNext(cell);
             state = State.GAME_OVER;
-            openMines();
-            Log.info(TAG, "GAME OVER");
+            setEndGameCellState();
+            Log.debug(TAG, "GAME OVER");
         } else {
-            Log.info(TAG, "Opening Cell at: " + cell.getCoordinate() + ".");
+            currentCellsOpen++;
+            openCellSubject.onNext(cell);
+            Log.debug(TAG, "There should be " + currentCellsOpen + " cells open at this time.");
+            Log.debug(TAG, "There are " + countCellsWithOpenState() + " cells open at this time.");
+
+            Log.debug(TAG, "Opening cell with state " + cell.getState() + " at: " + cell.getCoordinate() + ".");
             if (cell.isEmpty()) {
                 List<Cell> neighbours = neighbours(cell.getX(), cell.getY());
                 for (Cell neighbour : neighbours) open(neighbour);
@@ -93,6 +112,8 @@ public class Board implements BoardInterface {
         // only open neighbours if the correct number of mines has been marked around the current cell
         if (markedNeighbours.size() == currentCell.getValue()) {
             for (Cell neighbour : nonMarkedNeighbours) open(neighbour);
+        } else {
+            Log.debug(TAG, "Attempting to open neighbours with insufficient marks.");
         }
     }
     @Override
@@ -101,14 +122,16 @@ public class Board implements BoardInterface {
         if (cell == null) return;
         if (cell.isOpened()) return;
 
+        Log.debug(TAG, "From Mark: There are " + countCellsWithOpenState() + " cells open at this time.");
         if (cell.isMarked()) {
-            Log.info(TAG, "Removing mark for cell at: " + cell.getCoordinate() + ".");
+            Log.debug(TAG, "Removing mark for cell at: " + cell.getCoordinate() + ".");
             cell.unsetMark();
         } else {
-            Log.info(TAG, "Setting mark for cell at: " + cell.getCoordinate() + ".");
+            Log.debug(TAG, "Current cell state is: " + cell.getState());
+            Log.debug(TAG, "Setting mark for cell at: " + cell.getCoordinate() + ".");
             cell.setMark();
         }
-        markCellPublishSubject.onNext(cell);
+        markCellSubject.onNext(cell);
     }
 
     @Override
@@ -188,13 +211,16 @@ public class Board implements BoardInterface {
         return board[x][y];
     }
 
-    private void openMines() {
+    private void setEndGameCellState() {
+        Log.debug(TAG, "SET END GAME STATE IS CALLED");
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 Cell cell = board[i][j];
-                if (cell.isMine() && !cell.isOpened()) {
+                if (cell.isMine() && !cell.isOpened() && !cell.isMarked()) {
                     cell.open();
-                    openCellPublishSubject.onNext(cell);
+                    openMineSubject.onNext(cell);
+                } else if (!cell.isMine() && cell.isMarked()) {
+                    incorrectMarkCellSubject.onNext(cell);
                 }
             }
         }
@@ -206,4 +232,15 @@ public class Board implements BoardInterface {
         this.board = board;
     }
 
+    private int countCellsWithOpenState() {
+        int counter = 0;
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (board[i][j].isOpened()) {
+                    counter++;
+                }
+            }
+        }
+        return counter;
+    }
 }
