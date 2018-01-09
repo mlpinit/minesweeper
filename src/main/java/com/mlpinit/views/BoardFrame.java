@@ -42,6 +42,7 @@ public class BoardFrame extends JFrame {
         this.cellButtons = new JButton[MainController.defaultHeight][MainController.defaultWidth];
         this.openCellsObservable = openCellsObservable;
         this.markCellsObservable = markCellsObservable;
+        this.cellButtonBoardRequestObservable = Observable.empty();
         this.incorrectMarkCellsObservable = incorrectMarkCellsObservable;
         this.openMineCellObservable = openMineCellObservable;
         setupObservables();
@@ -84,14 +85,9 @@ public class BoardFrame extends JFrame {
                 button.setPreferredSize(new Dimension(25 ,25));
                 button.setBorder(BorderFactory.createEtchedBorder());
                 cellButtons[i][j] = button;
-
                 Observable<MouseButtonEvent> observable = SwingObservable.fromMouseEvents(button)
                         .map(event -> new MouseButtonEvent(coordinate, event.getButton(), event.getID()));
-                if (cellButtonBoardRequestObservable == null) {
-                    cellButtonBoardRequestObservable = observable;
-                } else {
-                    cellButtonBoardRequestObservable = cellButtonBoardRequestObservable.mergeWith(observable);
-                }
+                cellButtonBoardRequestObservable = cellButtonBoardRequestObservable.mergeWith(observable);
                 cellsPanel.add(button);
             }
         }
