@@ -1,3 +1,5 @@
 .idea
 .gradle
 out/
+minesweeper\.log.*
+minesweeper\.log

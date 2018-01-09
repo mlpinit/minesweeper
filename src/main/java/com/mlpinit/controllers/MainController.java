@@ -26,7 +26,7 @@ public class MainController {
     private BoardFrame boardFrame;
     private BoardActionInterpreter boardActionInterpreter;
 
-    private Observable<MouseButtonEvent>[][] cellButtonBoardRequestObservables;
+    private Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
     private Observable<MouseEvent> restartGameObservable;
     private Board board;
 
@@ -52,14 +52,19 @@ public class MainController {
         new MainController();
     }
 
+    private void createNewGame() {
+        this.boardActionInterpreter = BoardActionInterpreter.create();
+        this.board = new Board(openCellsSubject, markCellsSubject, incorrectMarkCellsSubject, openMineCelSubject);
+        this.boardFrame = new BoardFrame(
+                openCellsObservable, markCellsObservable, incorrectMarkCellsObservable, openMineCellObservable);
+        this.cellButtonBoardRequestObservable = boardFrame.getCellButtonBoardRequestObservable();
+        this.restartGameObservable = boardFrame.getRestartGameObservable();
+    }
+
     private void setupObservables() {
-        for (int i = 0; i < defaultHeight; i++) {
-            for (int j = 0; j < defaultWidth; j++) {
-                cellButtonBoardRequestObservables[i][j]
-                        .filter(mouseButtonEvent -> observedMouseEvents.contains(mouseButtonEvent.getButtonID()))
-                        .subscribe(boardActionInterpreter::addEvent);
-            }
-        }
+        cellButtonBoardRequestObservable
+                .filter(mouseButtonEvent -> observedMouseEvents.contains(mouseButtonEvent.getButtonID()))
+                .subscribe(boardActionInterpreter::addEvent);
         boardActionInterpreter.boardRequestObservable.subscribe(board::execute);
         restartGameObservable.map(event -> event.getID() == MouseEvent.MOUSE_CLICKED)
                 .filter(value -> value == true)
@@ -70,19 +75,5 @@ public class MainController {
                     createNewGame();
                     setupObservables();
                 });
-    }
-
-    private void createNewGame() {
-        this.boardActionInterpreter = BoardActionInterpreter.create();
-        this.board = new Board(openCellsSubject, markCellsSubject, incorrectMarkCellsSubject, openMineCelSubject);
-        this.boardFrame = new BoardFrame(
-                openCellsObservable, markCellsObservable, incorrectMarkCellsObservable, openMineCellObservable);
-        this.cellButtonBoardRequestObservables = boardFrame.getCellButtonBoardRequestObservables();
-        this.restartGameObservable = boardFrame.getRestartGameObservable();
-    }
-
-    // Use for testing only.
-    public Board getBoard() {
-        return board;
     }
 }

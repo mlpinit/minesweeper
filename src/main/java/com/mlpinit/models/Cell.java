@@ -1,7 +1,5 @@
 package com.mlpinit.models;
 
-import org.omg.CORBA.CODESET_INCOMPATIBLE;
-
 import java.awt.*;
 
 public class Cell {
@@ -23,7 +21,6 @@ public class Cell {
     private State state;
     private int value;
     private Coordinate coordinate;
-    private Color color;
 
     public Cell(Coordinate coordinate, int value) {
         this.coordinate = coordinate;
@@ -32,7 +29,7 @@ public class Cell {
     }
 
     public void open() {
-        state = State.OPENED;
+        this.state = State.OPENED;
     }
 
     public int getValue() {
@@ -40,7 +37,9 @@ public class Cell {
     }
 
     public String getDisplayValue() {
-        return value == MINE ? "*" : "" + value;
+        if (value == MINE) return "*";
+        if (value == EMPTY) return "";
+        return "" + value;
     }
 
     public int getX() {
@@ -81,6 +80,10 @@ public class Cell {
 
     public boolean isOpened() {
         return state == State.OPENED;
+    }
+
+    public boolean isClosed() {
+        return state == State.CLOSED;
     }
 
     public boolean isEmpty() {

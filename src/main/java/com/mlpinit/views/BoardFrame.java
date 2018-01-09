@@ -29,7 +29,7 @@ public class BoardFrame extends JFrame {
     private Observable<Cell> incorrectMarkCellsObservable;
     private Observable<Cell> openMineCellObservable;
     private Observable<MouseEvent> restartGameObservable;
-    public Observable<MouseButtonEvent>[][] cellButtonBoardRequestObservables;
+    public Observable<MouseButtonEvent> cellButtonBoardRequestObservable = null;
     public JButton[][] cellButtons;
 
     public BoardFrame(Observable<Cell> openCellsObservable, Observable<Cell> markCellsObservable,
@@ -44,7 +44,6 @@ public class BoardFrame extends JFrame {
         this.markCellsObservable = markCellsObservable;
         this.incorrectMarkCellsObservable = incorrectMarkCellsObservable;
         this.openMineCellObservable = openMineCellObservable;
-        this.cellButtonBoardRequestObservables = new Observable[MainController.defaultHeight][MainController.defaultWidth];
         setupObservables();
         addComponentsToPane(this.getContentPane());
         this.pack();
@@ -56,8 +55,8 @@ public class BoardFrame extends JFrame {
         return restartGameObservable;
     }
 
-    public Observable<MouseButtonEvent>[][] getCellButtonBoardRequestObservables() {
-        return cellButtonBoardRequestObservables;
+    public Observable<MouseButtonEvent> getCellButtonBoardRequestObservable() {
+        return cellButtonBoardRequestObservable;
     }
 
     private void setupObservables() {
@@ -85,8 +84,14 @@ public class BoardFrame extends JFrame {
                 button.setPreferredSize(new Dimension(25 ,25));
                 button.setBorder(BorderFactory.createEtchedBorder());
                 cellButtons[i][j] = button;
-                cellButtonBoardRequestObservables[i][j] = SwingObservable.fromMouseEvents(button)
+
+                Observable<MouseButtonEvent> observable = SwingObservable.fromMouseEvents(button)
                         .map(event -> new MouseButtonEvent(coordinate, event.getButton(), event.getID()));
+                if (cellButtonBoardRequestObservable == null) {
+                    cellButtonBoardRequestObservable = observable;
+                } else {
+                    cellButtonBoardRequestObservable = cellButtonBoardRequestObservable.mergeWith(observable);
+                }
                 cellsPanel.add(button);
             }
         }
