@@ -17,43 +17,32 @@ public class Board implements BoardInterface {
     private int nrOfMines;
     private Cell[][] board = null;
 
-    private PublishSubject<Cell> openCellSubject;
-    private PublishSubject<Cell> markCellSubject;
-    private PublishSubject<Cell> incorrectMarkCellSubject;
-    private PublishSubject<Cell> openMineSubject;
+
+    /* Private subjects */
+    private PublishSubject<Cell> openCellSubject = PublishSubject.create();
+    private PublishSubject<Cell> markCellSubject = PublishSubject.create();
+    private PublishSubject<Cell> incorrectMarkCellSubject = PublishSubject.create();
+    private PublishSubject<Cell> openMineCellSubject = PublishSubject.create();
     private PublishSubject<Boolean> gameIsRunningSubject = PublishSubject.create();
 
+    /* Public observables */
+    public Observable<Cell> openCellsObservable = openCellSubject.share();
+    public Observable<Cell> markCellsObservable = markCellSubject.share();
+    public Observable<Cell> incorrectMarkCellsObservable = incorrectMarkCellSubject.share();
+    public Observable<Cell> openMineCellObservable = openMineCellSubject.share();
     public Observable<Boolean> gameIsRunningObservable = gameIsRunningSubject.share();
 
-    public Board(PublishSubject<Cell> openCellSubject,
-                 PublishSubject<Cell> markCellSubject,
-                 PublishSubject<Cell> incorrectMarkCellSubject,
-                 PublishSubject<Cell> openMineSubject,
-                 int height, int width, int nrOfMines)
-    {
+    public Board(int height, int width, int nrOfMines) {
         this.height = height;
         this.width = width;
         this.nrOfMines = nrOfMines;
-        this.openCellSubject = openCellSubject;
-        this.markCellSubject = markCellSubject;
-        this.incorrectMarkCellSubject = incorrectMarkCellSubject;
-        this.openMineSubject = openMineSubject;
     }
 
-    public Board(PublishSubject<Cell> openCellSubject,
-                 PublishSubject<Cell> markCellSubject,
-                 PublishSubject<Cell> incorrectMarkCellSubject,
-                 PublishSubject<Cell> openMineSubject)
-    {
+    public Board() {
         // default settings
         this.height = 16;
         this.width = 30;
         this.nrOfMines = 100;
-
-        this.openCellSubject = openCellSubject;
-        this.markCellSubject = markCellSubject;
-        this.incorrectMarkCellSubject = incorrectMarkCellSubject;
-        this.openMineSubject = openMineSubject;
     }
 
     public void execute(BoardRequest boardRequest) {
@@ -83,7 +72,7 @@ public class Board implements BoardInterface {
 
         cell.open();
         if (cell.isMine()) {
-            openMineSubject.onNext(cell);
+            openMineCellSubject.onNext(cell);
             state = State.GAME_OVER;
             gameIsRunningSubject.onNext(false);
             setEndGameCellState();
@@ -229,7 +218,7 @@ public class Board implements BoardInterface {
                 Cell cell = board[i][j];
                 if (cell.isMine() && !cell.isOpened() && !cell.isMarked()) {
                     cell.open();
-                    openMineSubject.onNext(cell);
+                    openMineCellSubject.onNext(cell);
                 } else if (!cell.isMine() && cell.isMarked()) {
                     incorrectMarkCellSubject.onNext(cell);
                 }

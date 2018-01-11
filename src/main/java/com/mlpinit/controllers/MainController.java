@@ -28,19 +28,6 @@ public class MainController {
     private Observable<MouseEvent> restartGameObservable;
     private Board board;
 
-    /* Private subjects */
-    private PublishSubject<Cell> openCellsSubject = PublishSubject.create();
-    private PublishSubject<Cell> markCellsSubject = PublishSubject.create();
-    private PublishSubject<Cell> incorrectMarkCellsSubject = PublishSubject.create();
-    private PublishSubject<Cell> openMineCelSubject = PublishSubject.create();
-
-    /* Public observables */
-    public Observable<Cell> openCellsObservable = openCellsSubject.share();
-    public Observable<Cell> markCellsObservable = markCellsSubject.share();
-    public Observable<Cell> incorrectMarkCellsObservable = incorrectMarkCellsSubject.share();
-    public Observable<Cell> openMineCellObservable = openMineCelSubject.share();
-
-
     public MainController() {
         createNewGame();
         setupObservables();
@@ -53,9 +40,14 @@ public class MainController {
     private void createNewGame() {
         this.boardActionInterpreter = BoardActionInterpreter.create();
         this.minesweeperTimer = new MinesweeperTimer();
-        this.board = new Board(openCellsSubject, markCellsSubject, incorrectMarkCellsSubject, openMineCelSubject);
-        this.boardFrame = new BoardFrame(openCellsObservable, markCellsObservable, incorrectMarkCellsObservable,
-                openMineCellObservable, minesweeperTimer.elapsedTimeObservable);
+        this.board = new Board();
+        this.boardFrame = new BoardFrame(
+                board.openCellsObservable,
+                board.markCellsObservable,
+                board.incorrectMarkCellsObservable,
+                board.openMineCellObservable,
+                minesweeperTimer.elapsedTimeObservable
+        );
         this.cellButtonBoardRequestObservable = boardFrame.getCellButtonBoardRequestObservable();
         this.restartGameObservable = boardFrame.getRestartGameObservable();
     }

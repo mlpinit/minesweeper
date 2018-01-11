@@ -30,11 +30,6 @@ public class BoardFrame extends JFrame {
     private JTextField timerTextField;
     private int nrOfMines;
 
-    private Observable<Cell> openCellsObservable;
-    private Observable<Cell> markCellsObservable;
-    private Observable<Cell> incorrectMarkCellsObservable;
-    private Observable<Cell> openMineCellObservable;
-    private Observable<Integer> elapsedTimeObservable;
     private Observable<MouseEvent> restartGameObservable;
     public Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
     public JButton[][] cellButtons;
@@ -48,13 +43,12 @@ public class BoardFrame extends JFrame {
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         this.cellButtons = new JButton[MainController.defaultHeight][MainController.defaultWidth];
-        this.openCellsObservable = openCellsObservable;
-        this.markCellsObservable = markCellsObservable;
+        openCellsObservable.subscribe(this::openCell);
+        markCellsObservable.subscribe(this::markCell);
+        incorrectMarkCellsObservable.subscribe(this::updateCellMarkedIncorrectly);
+        openMineCellObservable.subscribe(this::openMine);
+        elapsedTimeObservable.subscribe(this::updateTimer);
         this.cellButtonBoardRequestObservable = Observable.empty();
-        this.incorrectMarkCellsObservable = incorrectMarkCellsObservable;
-        this.openMineCellObservable = openMineCellObservable;
-        this.elapsedTimeObservable = elapsedTimeObservable;
-        setupObservables();
         this.nrOfMines = MainController.defaultNrOfMines;
         addComponentsToPane(this.getContentPane());
         this.pack();
@@ -68,14 +62,6 @@ public class BoardFrame extends JFrame {
 
     public Observable<MouseButtonEvent> getCellButtonBoardRequestObservable() {
         return cellButtonBoardRequestObservable;
-    }
-
-    private void setupObservables() {
-        openCellsObservable.subscribe(this::openCell);
-        markCellsObservable.subscribe(this::markCell);
-        incorrectMarkCellsObservable.subscribe(this::updateCellMarkedIncorrectly);
-        openMineCellObservable.subscribe(this::openMine);
-        elapsedTimeObservable.subscribe(this::updateTimer);
     }
 
     private void addComponentsToPane(final Container pane) {
