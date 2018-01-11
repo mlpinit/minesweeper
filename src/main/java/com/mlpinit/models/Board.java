@@ -15,6 +15,7 @@ public class Board implements BoardInterface {
     private int height;
     private int width;
     private int nrOfMines;
+    private int remainingMines;
     private Cell[][] board = null;
 
 
@@ -25,6 +26,7 @@ public class Board implements BoardInterface {
     private PublishSubject<Cell> openMineCellSubject = PublishSubject.create();
     private PublishSubject<Cell> removeCellMarkSubject = PublishSubject.create();
     private PublishSubject<Boolean> gameIsRunningSubject = PublishSubject.create();
+    private PublishSubject<Integer> remainingMinesSubject = PublishSubject.create();
 
     /* Public observables */
     public Observable<Cell> openCellObservable = openCellSubject.share();
@@ -33,11 +35,14 @@ public class Board implements BoardInterface {
     public Observable<Cell> openMineCellObservable = openMineCellSubject.share();
     public Observable<Cell> removeCellMarkObservable = removeCellMarkSubject.share();
     public Observable<Boolean> gameIsRunningObservable = gameIsRunningSubject.share();
+    public Observable<Integer> remainingMinesObservable = remainingMinesSubject.share();
+
 
     public Board(int height, int width, int nrOfMines) {
         this.height = height;
         this.width = width;
         this.nrOfMines = nrOfMines;
+        this.remainingMines = nrOfMines;
     }
 
     public Board() {
@@ -45,6 +50,7 @@ public class Board implements BoardInterface {
         this.height = 16;
         this.width = 30;
         this.nrOfMines = 100;
+        this.remainingMines = 100;
     }
 
     public void execute(BoardRequest boardRequest) {
@@ -121,10 +127,13 @@ public class Board implements BoardInterface {
         if (cell.isMarked()) {
             cell.unsetMark();
             removeCellMarkSubject.onNext(cell);
+            remainingMines++;
         } else {
             cell.setMark();
+            remainingMines--;
             markCellSubject.onNext(cell);
         }
+        remainingMinesSubject.onNext(remainingMines);
     }
 
     @Override

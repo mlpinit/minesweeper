@@ -47,7 +47,9 @@ public class MainController {
                 board.incorrectCellMarkObservable,
                 board.openMineCellObservable,
                 board.removeCellMarkObservable,
-                minesweeperTimer.elapsedTimeObservable
+                board.remainingMinesObservable,
+                minesweeperTimer.elapsedTimeObservable,
+                defaultNrOfMines
         );
         this.cellButtonBoardRequestObservable = boardFrame.getCellButtonBoardRequestObservable();
         this.restartGameObservable = boardFrame.getRestartGameObservable();

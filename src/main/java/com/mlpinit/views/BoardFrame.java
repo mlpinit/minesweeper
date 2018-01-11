@@ -22,9 +22,9 @@ public class BoardFrame extends JFrame {
     private static final Color openCellColor = new Color(220,220,220);
     private static final Color mineColor = new Color(139,0,0);
 
+    private int startingNrOfMines;
     private JTextField nrOfMinesTextField;
     private JTextField timerTextField;
-    private int nrOfMines;
 
     private Observable<MouseEvent> restartGameObservable;
     public Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
@@ -32,7 +32,8 @@ public class BoardFrame extends JFrame {
 
     public BoardFrame(Observable<Cell> openCellObservable, Observable<Cell> markCellObservable,
                       Observable<Cell> incorrectCellMarkObservable, Observable<Cell> openMineCellObservable,
-                      Observable<Cell> removeCellMarkObservable, Observable<Integer> elapsedTimeObservable)
+                      Observable<Cell> removeCellMarkObservable, Observable<Integer> remainingMinesObservable,
+                      Observable<Integer> elapsedTimeObservable, int startingNrOfMines)
     {
         super("Minesweeper");
         this.setResizable(false);
@@ -44,9 +45,10 @@ public class BoardFrame extends JFrame {
         removeCellMarkObservable.subscribe(this::removeCellMark);
         incorrectCellMarkObservable.subscribe(this::updateCellMarkedIncorrectly);
         openMineCellObservable.subscribe(this::openMine);
+        remainingMinesObservable.subscribe(this::updateNrOfMinesTextField);
         elapsedTimeObservable.subscribe(this::updateTimer);
+        this.startingNrOfMines = startingNrOfMines;
         this.cellButtonBoardRequestObservable = Observable.empty();
-        this.nrOfMines = MainController.defaultNrOfMines;
         addComponentsToPane(this.getContentPane());
         this.pack();
         this.setLocationRelativeTo(null);
@@ -68,7 +70,7 @@ public class BoardFrame extends JFrame {
         restartButton.setBorder(new LineBorder(baseColor, 3));
         restartButton.setPreferredSize(new Dimension(200, 50));
         menuPanel.add(restartButton, BorderLayout.CENTER);
-        nrOfMinesTextField = new JTextField(" " + nrOfMines + " ");
+        nrOfMinesTextField = new JTextField("" + startingNrOfMines + " ");
         nrOfMinesTextField.setFont(new Font("sans-serif", Font.PLAIN, 20));
         nrOfMinesTextField.setBorder(new LineBorder(baseColor, 3));
         nrOfMinesTextField.setEditable(false);
@@ -131,8 +133,6 @@ public class BoardFrame extends JFrame {
     }
 
     private void markCell(Cell cell) {
-        nrOfMines += cell.isMarked() ? -1 : 1;
-        nrOfMinesTextField.setText("" + nrOfMines + " ");
         JButton button = cellButtons[cell.getX()][cell.getY()];
         button.setBackground(new Color(210,105,30));
         button.setText("!");
@@ -152,6 +152,10 @@ public class BoardFrame extends JFrame {
         button.setText("!*");
         button.setForeground(Color.white);
         button.setBackground(new Color(255,140,0));
+    }
+
+    private void updateNrOfMinesTextField(int nrOfMines) {
+        nrOfMinesTextField.setText("" + nrOfMines + " ");
     }
 
     private void updateTimer(int integer) {
