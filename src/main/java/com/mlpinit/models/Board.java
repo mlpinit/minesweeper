@@ -23,13 +23,15 @@ public class Board implements BoardInterface {
     private PublishSubject<Cell> markCellSubject = PublishSubject.create();
     private PublishSubject<Cell> incorrectMarkCellSubject = PublishSubject.create();
     private PublishSubject<Cell> openMineCellSubject = PublishSubject.create();
+    private PublishSubject<Cell> removeCellMarkSubject = PublishSubject.create();
     private PublishSubject<Boolean> gameIsRunningSubject = PublishSubject.create();
 
     /* Public observables */
-    public Observable<Cell> openCellsObservable = openCellSubject.share();
-    public Observable<Cell> markCellsObservable = markCellSubject.share();
-    public Observable<Cell> incorrectMarkCellsObservable = incorrectMarkCellSubject.share();
+    public Observable<Cell> openCellObservable = openCellSubject.share();
+    public Observable<Cell> markCellObservable = markCellSubject.share();
+    public Observable<Cell> incorrectCellMarkObservable = incorrectMarkCellSubject.share();
     public Observable<Cell> openMineCellObservable = openMineCellSubject.share();
+    public Observable<Cell> removeCellMarkObservable = removeCellMarkSubject.share();
     public Observable<Boolean> gameIsRunningObservable = gameIsRunningSubject.share();
 
     public Board(int height, int width, int nrOfMines) {
@@ -116,9 +118,13 @@ public class Board implements BoardInterface {
         Cell cell = board[x][y];
         if (cell == null) return;
         if (cell.isOpened()) return;
-        if (cell.isMarked()) cell.unsetMark();
-        else cell.setMark();
-        markCellSubject.onNext(cell);
+        if (cell.isMarked()) {
+            cell.unsetMark();
+            removeCellMarkSubject.onNext(cell);
+        } else {
+            cell.setMark();
+            markCellSubject.onNext(cell);
+        }
     }
 
     @Override

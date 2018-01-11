@@ -1,7 +1,6 @@
 package com.mlpinit.views;
 
 import com.mlpinit.controllers.MainController;
-import com.mlpinit.models.MinesweeperTimer;
 import com.mlpinit.models.MouseButtonEvent;
 import com.mlpinit.models.Cell;
 import com.mlpinit.models.Coordinate;
@@ -10,7 +9,6 @@ import com.mlpinit.utils.Log;
 import rx.Observable;
 import rx.observables.SwingObservable;
 
-import javax.sound.sampled.Line;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.plaf.ButtonUI;
@@ -20,9 +18,7 @@ import java.awt.event.MouseEvent;
 
 public class BoardFrame extends JFrame {
     private static final String TAG = "[BoardFrame]";
-    private static final String[] markSymbols = { "", "!" };
     private static final Color baseColor = new Color(105,105,105);
-    private static final Color[] markColors = { baseColor, new Color(210,105,30) };
     private static final Color openCellColor = new Color(220,220,220);
     private static final Color mineColor = new Color(139,0,0);
 
@@ -34,18 +30,19 @@ public class BoardFrame extends JFrame {
     public Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
     public JButton[][] cellButtons;
 
-    public BoardFrame(Observable<Cell> openCellsObservable, Observable<Cell> markCellsObservable,
-                      Observable<Cell> incorrectMarkCellsObservable, Observable<Cell> openMineCellObservable,
-                      Observable<Integer> elapsedTimeObservable)
+    public BoardFrame(Observable<Cell> openCellObservable, Observable<Cell> markCellObservable,
+                      Observable<Cell> incorrectCellMarkObservable, Observable<Cell> openMineCellObservable,
+                      Observable<Cell> removeCellMarkObservable, Observable<Integer> elapsedTimeObservable)
     {
         super("Minesweeper");
         this.setResizable(false);
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
         this.cellButtons = new JButton[MainController.defaultHeight][MainController.defaultWidth];
-        openCellsObservable.subscribe(this::openCell);
-        markCellsObservable.subscribe(this::markCell);
-        incorrectMarkCellsObservable.subscribe(this::updateCellMarkedIncorrectly);
+        openCellObservable.subscribe(this::openCell);
+        markCellObservable.subscribe(this::markCell);
+        removeCellMarkObservable.subscribe(this::removeCellMark);
+        incorrectCellMarkObservable.subscribe(this::updateCellMarkedIncorrectly);
         openMineCellObservable.subscribe(this::openMine);
         elapsedTimeObservable.subscribe(this::updateTimer);
         this.cellButtonBoardRequestObservable = Observable.empty();
@@ -134,14 +131,20 @@ public class BoardFrame extends JFrame {
     }
 
     private void markCell(Cell cell) {
-        int markType = cell.isMarked() ? 1 : 0;
         nrOfMines += cell.isMarked() ? -1 : 1;
         nrOfMinesTextField.setText("" + nrOfMines + " ");
         JButton button = cellButtons[cell.getX()][cell.getY()];
-        button.setBackground(markColors[markType]);
-        button.setText(markSymbols[markType]);
+        button.setBackground(new Color(210,105,30));
+        button.setText("!");
         button.setFont(button.getFont().deriveFont(Font.BOLD));
         button.setForeground(Color.white);
+    }
+
+    private void removeCellMark(Cell cell) {
+        JButton button = cellButtons[cell.getX()][cell.getY()];
+        button.setBackground(baseColor);
+        button.setText("");
+        button.setFont(button.getFont().deriveFont(Font.BOLD));
     }
 
     private void updateCellMarkedIncorrectly(Cell cell) {

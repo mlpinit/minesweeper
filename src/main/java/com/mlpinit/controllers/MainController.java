@@ -42,10 +42,11 @@ public class MainController {
         this.minesweeperTimer = new MinesweeperTimer();
         this.board = new Board();
         this.boardFrame = new BoardFrame(
-                board.openCellsObservable,
-                board.markCellsObservable,
-                board.incorrectMarkCellsObservable,
+                board.openCellObservable,
+                board.markCellObservable,
+                board.incorrectCellMarkObservable,
                 board.openMineCellObservable,
+                board.removeCellMarkObservable,
                 minesweeperTimer.elapsedTimeObservable
         );
         this.cellButtonBoardRequestObservable = boardFrame.getCellButtonBoardRequestObservable();
