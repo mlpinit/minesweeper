@@ -20,16 +20,12 @@ public class BoardTest {
     private int nrOfMines = 100;
     private int row = 1;
     private int column = 2;
-    private PublishSubject<Cell> openCellSubject = PublishSubject.create();
-    private PublishSubject<Cell> markCellSubject = PublishSubject.create();
-    private PublishSubject<Cell> incorrectMarkCellSubject = PublishSubject.create();
-    private PublishSubject<Cell> openMineCellSubject = PublishSubject.create();
     private Board board;
 
 
     @Before
     public void setup() {
-        this.board = new Board(openCellSubject, markCellSubject, incorrectMarkCellSubject, openMineCellSubject);
+        this.board = new Board();
     }
 
     @Test
@@ -63,7 +59,7 @@ public class BoardTest {
     public void testThatFirstClickIsNotAMine() {
         int cellIsAMineCounter = 0;
         for (int i = 0; i < 100; i++) {
-            Board board = new Board(openCellSubject, markCellSubject, incorrectMarkCellSubject, openMineCellSubject);
+            Board board = new Board();
             board.open(row, column);
             if (board.getBoard()[row][column].getValue() == Cell.MINE) {
                 cellIsAMineCounter++;
@@ -87,7 +83,7 @@ public class BoardTest {
                 }
             }
         }
-        openMineCellSubject.subscribe(subscriber);
+        board.openMineCellObservable.subscribe(subscriber);
         board.open(mine.getX(), mine.getY());
         assertEquals(Board.State.GAME_OVER, board.getState());
         assertEquals(Cell.State.OPENED, mine.getState());
@@ -114,7 +110,7 @@ public class BoardTest {
         }
 
         board.open(mine.getX(), mine.getY());
-        openCellSubject.subscribe(subscriber);
+        board.openCellObservable.subscribe(subscriber);
         board.open(notMine.getX(), notMine.getY());
         assertEquals(Board.State.GAME_OVER, board.getState());
         assertEquals(Cell.State.OPENED, mine.getState());
@@ -138,7 +134,7 @@ public class BoardTest {
     @Test
     public void testThatItPublishesOpenedCells() {
         TestSubscriber<Cell> subscriber = new TestSubscriber<>();
-        openCellSubject.subscribe(subscriber);
+        board.openCellObservable.subscribe(subscriber);
         Cell[][] cells = loadCellsFromTemplate();
         board.setBoard(cells);
         board.open(0, 3);
@@ -148,15 +144,18 @@ public class BoardTest {
 
     @Test
     public void testToggleMarkTogglesCell() {
-        TestSubscriber<Cell> subscriber = new TestSubscriber<>();
+        TestSubscriber<Cell> subscriberOne = new TestSubscriber<>();
+        TestSubscriber<Cell> subscriberTwo = new TestSubscriber<>();
         board.open(0, 0);
-        markCellSubject.subscribe(subscriber);
+        board.markCellObservable.subscribe(subscriberOne);
+        board.removeCellMarkObservable.subscribe(subscriberTwo);
         board.toggleMark(15, 29);
         assertEquals(Cell.State.MARKED, board.getBoard()[15][29].getState());
         board.toggleMark(15, 29);
         assertEquals(Cell.State.CLOSED, board.getBoard()[15][29].getState());
         Cell[][] cells = board.getBoard();
-        subscriber.assertValues(cells[15][29], cells[15][29]);
+        subscriberOne.assertValue(cells[15][29]);
+        subscriberTwo.assertValue(cells[15][29]);
     }
 
     @Test
@@ -184,7 +183,7 @@ public class BoardTest {
                 }
             }
         }
-        markCellSubject.subscribe(subscriber);
+        board.markCellObservable.subscribe(subscriber);
         board.toggleMark(cell.getX(), cell.getY());
         subscriber.assertNoValues();
     }
@@ -234,9 +233,21 @@ public class BoardTest {
         board.setBoard(cells);
         board.open(1,1);
         board.open(0,0);
-        markCellSubject.subscribe(subscriber);
+        board.markCellObservable.subscribe(subscriber);
         board.toggleMark(15,29);
         subscriber.assertNoValues();
+    }
+
+    @Test
+    public void testShouldDecreaseOrIncreaseNrOfMarksWhenToggled() {
+        board.open(1,1);
+        TestSubscriber<Integer> subscriber = new TestSubscriber<>();
+        board.remainingMinesObservable.subscribe(subscriber);
+        board.toggleMark(1,2);
+        board.toggleMark(1,3);
+        board.toggleMark(1,2);
+        board.toggleMark(1,3);
+        subscriber.assertValues(99, 98, 99, 100);
     }
 
     private Cell[][] loadCellsFromTemplate() {
