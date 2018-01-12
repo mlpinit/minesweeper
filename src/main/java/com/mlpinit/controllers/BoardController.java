@@ -3,12 +3,11 @@ package com.mlpinit.controllers;
 import com.mlpinit.models.*;
 import com.mlpinit.views.BoardFrame;
 import rx.Observable;
-import rx.subjects.PublishSubject;
 
 import java.awt.event.MouseEvent;
 import java.util.HashSet;
 
-public class MainController {
+public class BoardController {
     public static final HashSet<Integer> observedMouseEvents;
     static {
         observedMouseEvents = new HashSet<>();
@@ -16,10 +15,9 @@ public class MainController {
         observedMouseEvents.add(MouseEvent.MOUSE_RELEASED);
         observedMouseEvents.add(MouseEvent.MOUSE_ENTERED);
     }
-    public static final int defaultHeight = 16;
-    public static final int defaultWidth = 30;
-    public static final int defaultNrOfMines = 100;
-
+    private int selectedHeight;
+    private int selectedWidth;
+    private int selectedNrOfMines;
     private BoardFrame boardFrame;
     private BoardActionInterpreter boardActionInterpreter;
     private MinesweeperTimer minesweeperTimer;
@@ -28,19 +26,18 @@ public class MainController {
     private Observable<MouseEvent> restartGameObservable;
     private Board board;
 
-    public MainController() {
+    public BoardController(int height, int width, int nrOfMines) {
+        this.selectedHeight = height;
+        this.selectedWidth = width;
+        this.selectedNrOfMines = nrOfMines;
         createNewGame();
         setupObservables();
-    }
-
-    public static void main(String[] args) {
-        new MainController();
     }
 
     private void createNewGame() {
         this.boardActionInterpreter = BoardActionInterpreter.create();
         this.minesweeperTimer = new MinesweeperTimer();
-        this.board = new Board();
+        this.board = new Board(selectedHeight, selectedWidth, selectedNrOfMines);
         this.boardFrame = new BoardFrame(
                 board.openCellObservable,
                 board.markCellObservable,
@@ -49,7 +46,9 @@ public class MainController {
                 board.removeCellMarkObservable,
                 board.remainingMinesObservable,
                 minesweeperTimer.elapsedTimeObservable,
-                defaultNrOfMines
+                selectedHeight,
+                selectedWidth,
+                selectedNrOfMines
         );
         this.cellButtonBoardRequestObservable = boardFrame.getCellButtonBoardRequestObservable();
         this.restartGameObservable = boardFrame.getRestartGameObservable();

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Board implements BoardInterface {
+public class Board {
     private static final String TAG = "[Board]";
     public State state = State.NOT_STARTED;
 
@@ -64,7 +64,6 @@ public class Board implements BoardInterface {
         }
     }
 
-    @Override
     public void open(int x, int y) {
         if (state == State.NOT_STARTED) {
             setupBoard(x, y);
@@ -96,7 +95,6 @@ public class Board implements BoardInterface {
         }
     }
 
-    @Override
     public void openNeighbours(int x, int y) {
         Cell currentCell = cellAtPosition(x, y);
         if (!currentCell.isOpened()) return;
@@ -118,7 +116,6 @@ public class Board implements BoardInterface {
             Log.debug(TAG, "Attempting to open neighbours with insufficient marks.");
         }
     }
-    @Override
     public void toggleMark(int x, int y) {
         if (state == State.GAME_OVER) return;
         Cell cell = board[x][y];
@@ -136,12 +133,10 @@ public class Board implements BoardInterface {
         remainingMinesSubject.onNext(remainingMines);
     }
 
-    @Override
     public Cell[][] getBoard() {
         return board;
     }
 
-    @Override
     public State getState() {
         return state;
     }
@@ -241,17 +236,8 @@ public class Board implements BoardInterface {
         }
     }
 
-    // TODO: remove (used for debugging)
-    private int countCellsWithOpenState() {
-        int counter = 0;
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                if (board[i][j].isOpened()) {
-                    counter++;
-                }
-            }
-        }
-        return counter;
+    enum State {
+        NOT_STARTED, STARTED, GAME_OVER
     }
 
     // Used only for testing.

@@ -1,10 +1,9 @@
 package com.mlpinit.views;
 
-import com.mlpinit.controllers.MainController;
+import com.mlpinit.controllers.BoardController;
 import com.mlpinit.models.MouseButtonEvent;
 import com.mlpinit.models.Cell;
 import com.mlpinit.models.Coordinate;
-import com.mlpinit.utils.Log;
 
 import rx.Observable;
 import rx.observables.SwingObservable;
@@ -21,8 +20,9 @@ public class BoardFrame extends JFrame {
     private static final Color baseColor = new Color(105,105,105);
     private static final Color openCellColor = new Color(220,220,220);
     private static final Color mineColor = new Color(139,0,0);
-
     private int startingNrOfMines;
+    private int height;
+    private int width;
     private JTextField nrOfMinesTextField;
     private JTextField timerTextField;
 
@@ -33,13 +33,15 @@ public class BoardFrame extends JFrame {
     public BoardFrame(Observable<Cell> openCellObservable, Observable<Cell> markCellObservable,
                       Observable<Cell> incorrectCellMarkObservable, Observable<Cell> openMineCellObservable,
                       Observable<Cell> removeCellMarkObservable, Observable<Integer> remainingMinesObservable,
-                      Observable<Integer> elapsedTimeObservable, int startingNrOfMines)
+                      Observable<Integer> elapsedTimeObservable, int height, int width, int startingNrOfMines)
     {
         super("Minesweeper");
         this.setResizable(false);
         this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        this.cellButtons = new JButton[MainController.defaultHeight][MainController.defaultWidth];
+        this.height = height;
+        this.width = width;
+        this.cellButtons = new JButton[height][width];
         openCellObservable.subscribe(this::openCell);
         markCellObservable.subscribe(this::markCell);
         removeCellMarkObservable.subscribe(this::removeCellMark);
@@ -68,7 +70,7 @@ public class BoardFrame extends JFrame {
         menuPanel.setLayout(new BorderLayout());
         JButton restartButton = new JButton("Restart");
         restartButton.setBorder(new LineBorder(baseColor, 3));
-        restartButton.setPreferredSize(new Dimension(200, 50));
+        restartButton.setPreferredSize(new Dimension(80, 50));
         menuPanel.add(restartButton, BorderLayout.CENTER);
         nrOfMinesTextField = new JTextField("" + startingNrOfMines + " ");
         nrOfMinesTextField.setFont(new Font("sans-serif", Font.PLAIN, 20));
@@ -95,9 +97,9 @@ public class BoardFrame extends JFrame {
         pane.add(menuPanel, BorderLayout.NORTH);
 
         final JPanel cellsPanel = new JPanel();
-        cellsPanel.setLayout(new GridLayout(0,30));
-        for (int i = 0; i < MainController.defaultHeight; i++) {
-            for (int j = 0; j < MainController.defaultWidth; j++) {
+        cellsPanel.setLayout(new GridLayout(height,width));
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
                 final Coordinate coordinate = new Coordinate(i, j);
                 JButton button = new JButton();
                 button.setUI((ButtonUI) BasicButtonUI.createUI(button));

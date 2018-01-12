@@ -1,10 +1,8 @@
 package com.mlpinit.models;
 
-import com.mlpinit.controllers.MainController;
 import org.junit.Before;
 import org.junit.Test;
 import rx.observers.TestSubscriber;
-import rx.subjects.PublishSubject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
