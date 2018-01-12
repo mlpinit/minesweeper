@@ -252,8 +252,8 @@ public class Board {
         if (remainingMines == 0) {
             if (gameWon()) {
                 state = State.GAME_OVER;
-                gameWonSubject.onNext(null);
                 gameIsRunningSubject.onNext(false);
+                gameWonSubject.onNext(null);
             }
         }
     }
