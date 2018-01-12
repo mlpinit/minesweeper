@@ -1,6 +1,7 @@
 package com.mlpinit.views;
 
 import com.mlpinit.controllers.BoardController;
+import com.mlpinit.models.Board;
 import com.mlpinit.models.MouseButtonEvent;
 import com.mlpinit.models.Cell;
 import com.mlpinit.models.Coordinate;
@@ -33,7 +34,8 @@ public class BoardFrame extends JFrame {
     public BoardFrame(Observable<Cell> openCellObservable, Observable<Cell> markCellObservable,
                       Observable<Cell> incorrectCellMarkObservable, Observable<Cell> openMineCellObservable,
                       Observable<Cell> removeCellMarkObservable, Observable<Integer> remainingMinesObservable,
-                      Observable<Integer> elapsedTimeObservable, int height, int width, int startingNrOfMines)
+                      Observable<Void> gameWonObservable, Observable<Integer> elapsedTimeObservable,
+                      int height, int width, int startingNrOfMines)
     {
         super("Minesweeper");
         this.setResizable(false);
@@ -49,6 +51,7 @@ public class BoardFrame extends JFrame {
         openMineCellObservable.subscribe(this::openMine);
         remainingMinesObservable.subscribe(this::updateNrOfMinesTextField);
         elapsedTimeObservable.subscribe(this::updateTimer);
+        gameWonObservable.subscribe(this::gameWon);
         this.startingNrOfMines = startingNrOfMines;
         this.cellButtonBoardRequestObservable = Observable.empty();
         addComponentsToPane(this.getContentPane());
@@ -158,6 +161,10 @@ public class BoardFrame extends JFrame {
 
     private void updateNrOfMinesTextField(int nrOfMines) {
         nrOfMinesTextField.setText("" + nrOfMines + " ");
+    }
+
+    private void gameWon(Void nullValue) {
+        JOptionPane.showMessageDialog(this.getContentPane(), "Congratulations! You found all the mines!");
     }
 
     private void updateTimer(int integer) {

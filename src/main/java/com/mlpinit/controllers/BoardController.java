@@ -24,6 +24,7 @@ public class BoardController {
 
     private Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
     private Observable<MouseEvent> restartGameObservable;
+    private Observable<Void> gameWonObservable;
     private Board board;
 
     public BoardController(int height, int width, int nrOfMines) {
@@ -38,6 +39,7 @@ public class BoardController {
         this.boardActionInterpreter = BoardActionInterpreter.create();
         this.minesweeperTimer = new MinesweeperTimer();
         this.board = new Board(selectedHeight, selectedWidth, selectedNrOfMines);
+        this.gameWonObservable = board.gameWonObservable;
         this.boardFrame = new BoardFrame(
                 board.openCellObservable,
                 board.markCellObservable,
@@ -45,6 +47,7 @@ public class BoardController {
                 board.openMineCellObservable,
                 board.removeCellMarkObservable,
                 board.remainingMinesObservable,
+                board.gameWonObservable,
                 minesweeperTimer.elapsedTimeObservable,
                 selectedHeight,
                 selectedWidth,

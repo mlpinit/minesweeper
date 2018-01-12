@@ -27,6 +27,7 @@ public class Board {
     private PublishSubject<Cell> removeCellMarkSubject = PublishSubject.create();
     private PublishSubject<Boolean> gameIsRunningSubject = PublishSubject.create();
     private PublishSubject<Integer> remainingMinesSubject = PublishSubject.create();
+    private PublishSubject<Void> gameWonSubject = PublishSubject.create();
 
     /* Public observables */
     public Observable<Cell> openCellObservable = openCellSubject.share();
@@ -36,6 +37,7 @@ public class Board {
     public Observable<Cell> removeCellMarkObservable = removeCellMarkSubject.share();
     public Observable<Boolean> gameIsRunningObservable = gameIsRunningSubject.share();
     public Observable<Integer> remainingMinesObservable = remainingMinesSubject.share();
+    public Observable<Void> gameWonObservable = gameWonSubject.share();
 
 
     public Board(int height, int width, int nrOfMines) {
@@ -93,6 +95,7 @@ public class Board {
                 for (Cell neighbour : neighbours) open(neighbour);
             }
         }
+        checkAndUpdateStatusIfGameWon();
     }
 
     public void openNeighbours(int x, int y) {
@@ -130,6 +133,7 @@ public class Board {
             remainingMines--;
             markCellSubject.onNext(cell);
         }
+        checkAndUpdateStatusIfGameWon();
         remainingMinesSubject.onNext(remainingMines);
     }
 
@@ -232,6 +236,24 @@ public class Board {
                 } else if (!cell.isMine() && cell.isMarked()) {
                     incorrectMarkCellSubject.onNext(cell);
                 }
+            }
+        }
+    }
+
+    private boolean gameWon() {
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (!board[i][j].isOpened() && !board[i][j].isMarked()) return false;
+            }
+        }
+        return true;
+    }
+    private void checkAndUpdateStatusIfGameWon() {
+        if (remainingMines == 0) {
+            if (gameWon()) {
+                state = State.GAME_OVER;
+                gameWonSubject.onNext(null);
+                gameIsRunningSubject.onNext(false);
             }
         }
     }
