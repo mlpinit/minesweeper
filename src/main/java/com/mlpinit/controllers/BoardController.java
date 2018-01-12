@@ -24,7 +24,6 @@ public class BoardController {
 
     private Observable<MouseButtonEvent> cellButtonBoardRequestObservable;
     private Observable<MouseEvent> restartGameObservable;
-    private Observable<Void> gameWonObservable;
     private Board board;
 
     public BoardController(int height, int width, int nrOfMines) {
@@ -39,7 +38,6 @@ public class BoardController {
         this.boardActionInterpreter = BoardActionInterpreter.create();
         this.minesweeperTimer = new MinesweeperTimer();
         this.board = new Board(selectedHeight, selectedWidth, selectedNrOfMines);
-        this.gameWonObservable = board.gameWonObservable;
         this.boardFrame = new BoardFrame(
                 board.openCellObservable,
                 board.markCellObservable,
@@ -69,8 +67,7 @@ public class BoardController {
                 .filter(mouseButtonEvent -> observedMouseEvents.contains(mouseButtonEvent.getButtonID()))
                 .subscribe(boardActionInterpreter::addEvent);
         boardActionInterpreter.boardRequestObservable.subscribe(board::execute);
-        restartGameObservable.map(event -> event.getID() == MouseEvent.MOUSE_CLICKED)
-                .filter(value -> value == true)
+        restartGameObservable.filter(event -> event.getID() == MouseEvent.MOUSE_CLICKED)
                 .subscribe(event -> {
                     this.boardFrame.setVisible(false);
                     this.boardFrame.dispose();
