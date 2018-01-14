@@ -1,20 +1,6 @@
 package com.mlpinit.models;
 
-import java.awt.*;
-
 public class Cell {
-    public static Color[] colors = {
-            Color.white, // not used
-            new Color(11,36,251),        // => 1
-            new Color(14,122,17),        // => 2
-            new Color(252,13,27),        // => 3
-            new Color(2,11,121)  ,       // => 4
-            new Color(163, 141, 28),     // => 5
-            new Color(169,169,169),      // => 6
-            new Color(255,140,0),        // => 7
-            new Color(0,0,0)             // => 8
-    };
-
     public static final int MINE = -1;
     public static final int EMPTY = 0;
 
@@ -54,20 +40,12 @@ public class Cell {
         return state;
     }
 
-    public boolean setMark() {
-        if (state == State.CLOSED) {
-            state = State.MARKED;
-            return true;
-        }
-        return false;
+    public void setMark() {
+        if (state == State.CLOSED) state = State.MARKED;
     }
 
-    public boolean unsetMark() {
-        if (state == State.MARKED) {
-            state = State.CLOSED;
-            return true;
-        }
-        return false;
+    public void unsetMark() {
+        if (state == State.MARKED) state = State.CLOSED;
     }
 
     public Coordinate getCoordinate() {
@@ -92,10 +70,6 @@ public class Cell {
 
     public boolean isMine() {
         return value == MINE;
-    }
-
-    public Color getForegroundColor() {
-        return value == MINE ? Color.white : colors[value];
     }
 
     public String toString() {

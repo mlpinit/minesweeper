@@ -133,8 +133,8 @@ public class Board {
             remainingMines--;
             markCellSubject.onNext(cell);
         }
-        checkAndUpdateStatusIfGameWon();
         remainingMinesSubject.onNext(remainingMines);
+        checkAndUpdateStatusIfGameWon();
     }
 
     public Cell[][] getBoard() {
